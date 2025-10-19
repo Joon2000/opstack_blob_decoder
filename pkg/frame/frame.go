@@ -15,7 +15,7 @@ type ChannelID [ChannelIDLength]byte
 
 type Frame struct {
 	ID          ChannelID
-	FrameNumber uint64
+	FrameNumber uint16
 	IsLast      bool
 	Data        []byte
 }
