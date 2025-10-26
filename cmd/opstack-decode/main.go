@@ -139,6 +139,34 @@ func main() {
 		} else {
 			fmt.Printf("  first RLP item read failed: %v\n", err)
 		}
+		items, err := chanio.IterateRLP(raw, 0) // 0=끝까지
+		if err != nil {
+			fmt.Printf("  rlp iterate failed: %v\n", err)
+			continue
+		}
+		fmt.Printf("  RLP items (batches): %d\n", len(items))
+
+		outDir := "channels_dec"
+		_ = os.MkdirAll(outDir, 0o755)
+
+		for _, it := range items {
+			// 요약 출력
+			fmt.Printf("    - batch #%d: %d bytes\n", it.Index, len(it.Raw))
+
+			// 사람이 읽을 수 있게 JSON 저장
+			pretty, perr := chanio.PrettyDumpJSON(it.Raw)
+			if perr != nil {
+				fmt.Printf("      pretty dump error: %v\n", perr)
+				continue
+			}
+			fn := filepath.Join(outDir, k+fmt.Sprintf("-batch-%03d.json", it.Index))
+			if err := os.WriteFile(fn, pretty, 0o644); err != nil {
+				fmt.Printf("      write error: %v\n", err)
+				continue
+			}
+			// 원시 RLP도 함께 저장하고 싶으면:
+			// _ = os.WriteFile(filepath.Join(outDir, k+fmt.Sprintf("-batch-%03d.rlp"), it.Index), it.Raw, 0o644)
+		}
 	}
 }
 
