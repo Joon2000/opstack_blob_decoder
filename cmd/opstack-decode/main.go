@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/Joon2000/opstack_blob_decoder/pkg/blob"
+	"github.com/Joon2000/opstack_blob_decoder/pkg/chanio"
 	"github.com/Joon2000/opstack_blob_decoder/pkg/derive"
 	"github.com/Joon2000/opstack_blob_decoder/pkg/frame"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -121,6 +122,24 @@ func main() {
 		}
 	}
 
+	// 7) 압축 해제 + RLP 확인
+	for _, id := range order {
+		k := hex.EncodeToString(id[:])
+		payload := chans[k].Payload
+
+		raw, algo, err := chanio.Decompress(payload)
+		if err != nil {
+			fmt.Printf("\n[ch %s..] decompress failed: %v\n", k[:8], err)
+			continue
+		}
+		fmt.Printf("\n[ch %s..] decompress: %s → %d bytes\n", k[:8], algo, len(raw))
+
+		if n, err := chanio.PeekFirstRLP(raw); err == nil {
+			fmt.Printf("  first RLP item length: %d bytes\n", n)
+		} else {
+			fmt.Printf("  first RLP item read failed: %v\n", err)
+		}
+	}
 }
 
 func fatalf(format string, args ...any) {
