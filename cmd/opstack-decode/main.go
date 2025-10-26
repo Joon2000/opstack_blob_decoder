@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/Joon2000/opstack_blob_decoder/pkg/blob"
+	"github.com/Joon2000/opstack_blob_decoder/pkg/derive"
 	"github.com/Joon2000/opstack_blob_decoder/pkg/frame"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -104,9 +105,32 @@ func main() {
 		fmt.Printf("  #%d: ch=%s.. n=%d last=%v data=%dB\n",
 			i, chID, f.FrameNumber, f.IsLast, len(f.Data))
 	}
+
+	// 6) 채널 재조립
+	order, chans := derive.ReassembleChannels(frames, 0)
+	fmt.Printf("[✓] complete channels: %d\n", len(chans))
+	for _, id := range order {
+		k := hex.EncodeToString(id)
+		st := chans[k].Stat
+		if st.Complete {
+			fmt.Printf("  ch=%s.. payload=%dB frames=%d used=%d gaps=%v dup=%v\n",
+				short(k), len(chans[k].Payload), st.FramesTotal, st.FramesUsed, st.HasGaps, st.HasDuplicate)
+		} else {
+			fmt.Printf("  ch=%s.. (incomplete) frames=%d used=%d gaps=%v dup=%v\n",
+				short(k), st.FramesTotal, st.FramesUsed, st.HasGaps, st.HasDuplicate)
+		}
+	}
+
 }
 
 func fatalf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "[fatal] "+format+"\n", args...)
 	os.Exit(1)
+}
+
+func short(s string) string {
+	if len(s) > 8 {
+		return s[:8]
+	}
+	return s
 }
